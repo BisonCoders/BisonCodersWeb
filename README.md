@@ -1,3 +1,15 @@
+# Sitio Web Bisoncoders 
+> Les dejo algo de documentación de mi parte
+
+Este proyecto está basado en NextJS y Tailwind CSS para el frontend,
+por ahora, para el backend pueden usar lo que mas se acomode a ustedes, mongoose, prisma, etc. Por mientras se me ocurrió hacer una plantilla simple genérica para que sea mas facil para ustedes modificarla.
+
+En la carpeta /components puse todas las partes del sitio web el About, Eventos, Footer, Navbar, y Hero, y la página principal es la que dice page.js que esta directamente en la carpeta /app, si necesitan o quieren hacer CSS custom ahi está el globals.css dentro de la carpeta /app también, en la carpeta /public pueden meter las imagenes o assets que se les de la gana y meterlas a la página.
+
+**Este proyecto es libre y cualquiera del club que quiera contribuir adelante!**
+> Atte: Andre Aguirre
+### Pasos de Next.js ya predefinidos por el framework:
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started
@@ -29,8 +41,4 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
