@@ -104,7 +104,7 @@ export const authOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 días
   },
   debug: process.env.NODE_ENV === 'development',
-});
+};
 
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };

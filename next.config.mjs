@@ -9,9 +9,9 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   
-  // Configuración para evitar problemas de contexto
+  // Experimental features
   experimental: {
-    appDir: true,
+    turbo: {},
   },
   
   // Configuración para evitar generación estática problemática
