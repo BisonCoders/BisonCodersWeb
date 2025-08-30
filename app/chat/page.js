@@ -43,8 +43,6 @@ export default function Chat() {
       });
 
       if (response.ok) {
-        const message = await response.json();
-        setMessages(prev => [...prev, message]);
         setNewMessage('');
         // Solo hacer scroll cuando el usuario envía un mensaje
         setTimeout(() => scrollToBottom(), 100);
@@ -71,7 +69,6 @@ export default function Chat() {
       });
 
       if (response.ok) {
-        setMessages(messages.filter(msg => msg._id !== messageId));
         setMessage('Mensaje eliminado exitosamente');
       } else {
         const error = await response.json();

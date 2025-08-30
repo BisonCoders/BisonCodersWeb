@@ -1,13 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { usePresentaciones } from '../hooks/usePresentaciones';
+import { usePresentacionesAuto } from '../hooks/usePresentacionesAuto';
 import { useParams } from 'next/navigation';
 
 const PresentacionPage = () => {
   const params = useParams();
   const nombre = params.nombre;
-  const presentaciones = usePresentaciones();
+  const presentaciones = usePresentacionesAuto();
   
   const presentacion = presentaciones.find(p => p.nombre === nombre);
 
@@ -46,7 +46,7 @@ const PresentacionPage = () => {
 const EjemploPresentacion = ({ presentacion }) => (
   <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
     <div className="flex">
-      <MenuLateral presentaciones={usePresentaciones()} />
+      <MenuLateral presentaciones={usePresentacionesAuto()} />
       <div className="flex-1 p-8">
         <div className="max-w-4xl mx-auto">
           <Link 
@@ -105,7 +105,7 @@ const EjemploPresentacion = ({ presentacion }) => (
 const ComoContribuir = ({ presentacion }) => (
   <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
     <div className="flex">
-      <MenuLateral presentaciones={usePresentaciones()} />
+      <MenuLateral presentaciones={usePresentacionesAuto()} />
       <div className="flex-1 p-8">
         <div className="max-w-4xl mx-auto">
           <Link 
@@ -199,7 +199,7 @@ cp app/intros/ejemplo-presentacion/page.js app/intros/tu-nombre/page.js
 const PresentacionGenerica = ({ presentacion }) => (
   <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
     <div className="flex">
-      <MenuLateral presentaciones={usePresentaciones()} />
+      <MenuLateral presentaciones={usePresentacionesAuto()} />
       <div className="flex-1 p-8">
         <div className="max-w-4xl mx-auto">
           <Link 
