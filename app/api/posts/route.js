@@ -54,7 +54,8 @@ export async function POST(request) {
       createdAt: new Date(),
       updatedAt: new Date(),
       likes: [],
-      comments: []
+      comments: [],
+      reactions: {}
     };
 
     const result = await db.collection('posts').insertOne(post);

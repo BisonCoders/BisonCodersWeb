@@ -65,6 +65,8 @@ export async function POST(request) {
     const result = await db.collection('messages').insertOne(message);
     message._id = result.insertedId;
 
+    // Mensaje guardado exitosamente en DB
+
     return NextResponse.json(message, { status: 201 });
   } catch (error) {
     console.error('Error al crear mensaje:', error);

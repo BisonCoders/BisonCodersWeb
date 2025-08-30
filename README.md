@@ -1,183 +1,296 @@
-# BisonCoders - Comunidad de Programadores
+# Sitio Web Bisoncoders 
+> Les dejo algo de documentación de mi parte
 
-Una plataforma web para conectar programadores y desarrolladores, con sistema de autenticación OAuth y perfiles personalizables.
+Este proyecto está basado en NextJS y Tailwind CSS para el frontend,
+por ahora, para el backend pueden usar lo que mas se acomode a ustedes, mongoose, prisma, etc. Por mientras se me ocurrió hacer una plantilla simple genérica para que sea mas facil para ustedes modificarla.y
 
-## Características
+En la carpeta /components puse todas las partes del sitio web el About, Eventos, Footer, Navbar, y Hero, y la página principal es la que dice page.js que esta directamente en la carpeta /app, si necesitan o quieren hacer CSS custom ahi está el globals.css dentro de la carpeta /app también, en la carpeta /public pueden meter las imagenes o assets que se les de la gana y meterlas a la página.
 
-- 🔐 Autenticación OAuth con Google y GitHub
-- 👤 Perfiles personalizables (nombre, carrera, semestre)
-- 🗄️ Base de datos MongoDB para almacenar usuarios
-- 🎨 Interfaz moderna y responsive
-- ⚡ Desarrollado con Next.js 15
+**Este proyecto es libre y cualquiera del club que quiera contribuir adelante!**
+> Atte: Andre Aguirre
+##  Guía para Todos
 
-## Configuración
+### 1. Requisitos Previos
+Antes de empezar, necesitas tener instalado:
 
-### 1. Instalar dependencias
+1. **Git** (para clonar y subir cambios)
+   - Descarga desde: https://git-scm.com/
+   - En Windows: instala Git Bash también
+
+2. **Node.js** (versión 18 o superior)
+   - Descarga desde: https://nodejs.org/
+   - Esto también instala npm automáticamente
+
+3. **Editor de código** (recomendado)
+   - Visual Studio Code: https://code.visualstudio.com/
+
+### 2. Clonar el Proyecto
+Abre tu terminal/command prompt y ejecuta:
 
 ```bash
+# Clona el repositorio
+git clone [URL_DEL_REPOSITORIO]
+
+# Entra a la carpeta del proyecto
+cd BisonCodersWeb
+```
+
+### 3. Instalar Dependencias
+```bash
+# Instala todas las dependencias necesarias
 npm install
 ```
 
-### 2. Configurar variables de entorno
-
-Crea un archivo `.env.local` en la raíz del proyecto con las siguientes variables:
-
-```env
-# NextAuth Configuration
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=tu-secret-super-seguro-aqui-cambialo-en-produccion
-
-# MongoDB
-MONGODB_URI=mongodb+srv://bisoncodersdb:9TO5cDHbWvr6UjfW@cluster0.ryv1yjy.mongodb.net/
-
-# Google OAuth
-GOOGLE_CLIENT_ID=tu-google-client-id-aqui
-GOOGLE_CLIENT_SECRET=tu-google-client-secret-aqui
-
-# GitHub OAuth
-GITHUB_CLIENT_ID=tu-github-client-id-aqui
-GITHUB_CLIENT_SECRET=tu-github-client-secret-aqui
-```
-
-### 3. Obtener API Keys
-
-#### Google OAuth:
-1. Ve a [Google Cloud Console](https://console.cloud.google.com/)
-2. Crea un nuevo proyecto o selecciona uno existente
-3. Habilita la API de Google+ 
-4. Ve a "Credentials" → "Create Credentials" → "OAuth 2.0 Client IDs"
-5. Configura las URLs de redirección:
-   - Desarrollo: `http://localhost:3000/api/auth/callback/google`
-   - Producción: `https://tu-dominio.com/api/auth/callback/google`
-6. Copia el `Client ID` y `Client Secret` a tu `.env.local`
-
-#### GitHub OAuth:
-1. Ve a [GitHub Settings](https://github.com/settings/developers)
-2. Haz clic en "New OAuth App"
-3. Configura las URLs de redirección:
-   - Desarrollo: `http://localhost:3000/api/auth/callback/github`
-   - Producción: `https://tu-dominio.com/api/auth/callback/github`
-4. Copia el `Client ID` y `Client Secret` a tu `.env.local`
-
-### 4. Generar NEXTAUTH_SECRET
-
-Para generar un secret seguro, puedes usar:
-
+### 4. Ejecutar el Proyecto
 ```bash
-openssl rand -base64 32
-```
-
-O visita: https://generate-secret.vercel.app/32
-
-### 5. Ejecutar el proyecto
-
-```bash
+# Inicia el servidor de desarrollo
 npm run dev
 ```
 
-El proyecto estará disponible en `http://localhost:3000`
+Abre [http://localhost:3000](http://localhost:3000) en tu navegador para ver la página.
 
-## Estructura del Proyecto
+### 5. 🎨 Cómo Modificar la Página
 
+#### **Cambiar Colores**
+Todos los colores están en las clases de Tailwind CSS. Los principales colores del tema son:
+
+- **Azul principal**: `bg-blue-600`, `text-blue-600`, `hover:bg-blue-700`
+- **Texto**: `text-gray-900` (oscuro), `text-white` (blanco)
+- **Fondos**: `bg-white`, `bg-gray-50`, `bg-gray-900`
+
+**Ejemplo**: Para cambiar el color principal de azul a verde:
+```javascript
+// En cualquier componente, cambia:
+className="bg-blue-600 hover:bg-blue-700"
+// Por:
+className="bg-green-600 hover:bg-green-700"
 ```
+
+#### **Cambiar Textos**
+- **Hero section**: Edita `/app/components/Hero.js`
+- **Información del club**: Edita `/app/components/About.js` 
+- **Eventos**: Edita `/app/components/Events.js`
+- **Pie de página**: Edita `/app/components/Footer.js`
+
+#### **Agregar Imágenes**
+1. Coloca tus imágenes en la carpeta `/public/`
+2. Úsalas en los componentes:
+```javascript
+<Image src="/nombre-de-tu-imagen.jpg" alt="Descripción" width={300} height={200} />
+```
+
+#### **Modificar Estilos Globales**
+Edita `/app/globals.css` para cambios de CSS personalizados.
+
+### 6. 📤 Subir Cambios (Git)
+
+#### **Primera vez (configurar Git)**
+```bash
+# Configura tu nombre y email
+git config --global user.name "Tu Nombre"
+git config --global user.email "tu@email.com"
+```
+
+#### **Subir cambios**
+```bash
+# Ver qué archivos cambiaron
+git status
+
+# Agregar todos los cambios
+git add .
+
+# Hacer commit con mensaje descriptivo
+git commit -m "Descripción de lo que cambiaste"
+
+# Subir a GitHub
+git push
+```
+
+### 7. 🛠️ Comandos Útiles
+
+```bash
+# Ejecutar el proyecto
+npm run dev
+
+# Construir para producción
+npm run build
+
+# Revisar errores de código
+npm run lint
+
+# Ver el estado de Git
+git status
+
+# Ver historial de commits
+git log --oneline
+
+# Crear nueva rama para trabajar
+git checkout -b nombre-de-tu-rama
+
+# Cambiar entre ramas
+git checkout nombre-de-rama
+```
+
+### 8. 📁 Estructura del Proyecto
+```
+BisonCodersWeb/
 ├── app/
-│   ├── api/
-│   │   ├── auth/[...nextauth]/route.js    # Configuración NextAuth
-│   │   ├── profile/route.js               # API para perfiles
-│   │   ├── posts/route.js                 # API para posts
-│   │   ├── chat/route.js                  # API para chat
-│   │   └── admin/users/route.js           # API para administración
-│   ├── auth/
-│   │   └── signin/page.js                 # Página de login
-│   ├── components/
-│   │   ├── Header.js                      # Header con autenticación
-│   │   ├── AuthButton.js                  # Botón de autenticación con menú
-│   │   ├── SessionProvider.js             # Provider de sesión
-│   │   └── ...                            # Otros componentes
-│   ├── profile/
-│   │   └── page.js                        # Página de perfil
-│   ├── posts/
-│   │   └── page.js                        # Página de posts
-│   ├── chat/
-│   │   └── page.js                        # Página de chat
-│   ├── admin/
-│   │   └── page.js                        # Panel de administración
-│   └── ...                                # Otras páginas
-├── lib/
-│   └── mongodb.js                         # Configuración MongoDB
-└── .env.local                             # Variables de entorno
+│   ├── components/          # Todos los componentes
+│   │   ├── Header.js       # Barra de navegación
+│   │   ├── Hero.js         # Sección principal
+│   │   ├── About.js        # Información del club
+│   │   ├── Events.js       # Próximos eventos
+│   │   └── Footer.js       # Pie de página
+│   ├── globals.css         # Estilos globales
+│   ├── layout.js           # Layout principal
+│   └── page.js             # Página principal
+├── public/                 # Imágenes y archivos estáticos
+├── package.json            # Dependencias del proyecto
+└── README.md              # Este archivo
 ```
 
-## Funcionalidades
+### 9. ❓ Solución de Problemas Comunes
 
-### Autenticación
-- Botón único de "Iniciar Sesión" con menú desplegable
-- Opciones de login con Google OAuth y GitHub OAuth
-- Sesiones persistentes
-- Logout seguro
+**Error: "npm no se reconoce"**
+- Reinstala Node.js desde nodejs.org
 
-### Sistema de Posts
-- Crear y publicar posts con título y contenido
-- Ver posts de todos los usuarios
-- Eliminar posts propios o como admin
-- Interfaz moderna y responsive
+**Error: "git no se reconoce"**
+- Reinstala Git y asegúrate de agregarlo al PATH
 
-### Chat en Tiempo Real
-- Chat comunitario con mensajes en tiempo real
-- Polling automático cada 3 segundos
-- Eliminar mensajes propios o como admin
-- Indicadores de roles (Admin)
+**La página no carga cambios**
+- Para el servidor (Ctrl+C) y vuelve a ejecutar `npm run dev`
 
-### Sistema de Roles y Moderación
-- **Roles:** Usuario (por defecto) y Admin
-- **Panel de Administración** exclusivo para admins
-- **Funciones de Admin:**
-  - Cambiar roles de usuarios
-  - Banear/Desbanear usuarios
-  - Mutear/Desmutear usuarios (24 horas)
-  - Ver todos los usuarios registrados
-- **Moderación automática** en chat y posts
+**Conflictos en Git**
+```bash
+# Descarga los últimos cambios antes de hacer push
+git pull
+# Resuelve conflictos manualmente y luego:
+git add .
+git commit -m "Resolución de conflictos"
+git push
+```
 
-### Perfil de Usuario
-- Editar nombre completo
-- Entrada manual de carrera
-- Entrada manual de semestre
-- Avatar automático desde OAuth
+### 10. 🎯 Consejos para Contribuir
 
-### Base de Datos
-- Almacenamiento en MongoDB Atlas
-- Colección `users` para perfiles y roles
-- Colección `posts` para publicaciones
-- Colección `messages` para chat
-- Colección `accounts` para OAuth (automática)
-- Colección `sessions` para sesiones (automática)
+1. **Siempre crea una rama nueva** para tus cambios
+2. **Haz commits pequeños** y frecuentes con mensajes descriptivos
+3. **Prueba tus cambios** antes de hacer push
+4. **Pide ayuda** si tienes dudas en el grupo del club
 
-## Tecnologías Utilizadas
+¡Happy coding! 🐃💻
 
-- **Frontend**: Next.js 15, React 19, Tailwind CSS
-- **Backend**: Next.js API Routes
-- **Autenticación**: NextAuth.js v4
-- **Base de Datos**: MongoDB Atlas
-- **Deploy**: Vercel (recomendado)
+---
 
-## Deploy en Producción
+## 📚 Glosario de Conceptos para Novatos
 
-1. Configura las variables de entorno en tu plataforma de deploy
-2. Actualiza las URLs de redirección en Google Cloud Console y GitHub
-3. Cambia `NEXTAUTH_URL` a tu dominio de producción
-4. Genera un nuevo `NEXTAUTH_SECRET` para producción
+### 🔧 Conceptos de Desarrollo
 
-## Contribuir
+**Ejecutar/Correr el proyecto** 🏃‍♂️
+- Iniciar el servidor de desarrollo para ver tu página web en el navegador
+- Comando: `npm run dev`
 
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
+**Instalar dependencias** 📦
+- Descargar todas las librerías y herramientas que necesita el proyecto para funcionar
+- Comando: `npm install`
 
-## Licencia
+**Construir/Build** 🏗️
+- Preparar tu proyecto para ponerlo en producción (internet)
+- Optimiza y comprime todos los archivos
+- Comando: `npm run build`
 
-Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
+**Linting** 🧹
+- Revisar tu código en busca de errores o malas prácticas
+- Como un corrector ortográfico pero para código
+- Comando: `npm run lint`
 
+### 📁 Conceptos de Git
+
+**Clonar** 📋
+- Descargar una copia completa del proyecto desde GitHub a tu computadora
+- Como "descargar" pero con todo el historial de cambios
+- Comando: `git clone [URL]`
+
+**Inicializar** 🎬
+- Crear un nuevo repositorio de Git en una carpeta
+- Solo se hace una vez por proyecto
+- Comando: `git init`
+
+**Commit** 💾
+- Guardar una "foto" de tus cambios con una descripción
+- Es como guardar un punto de control en un videojuego
+- Comando: `git commit -m "mensaje"`
+
+**Push** ⬆️
+- Subir tus commits (cambios guardados) a GitHub
+- Como subir tus archivos a la nube
+- Comando: `git push`
+
+**Pull** ⬇️
+- Descargar los últimos cambios que otros hayan subido
+- Como actualizar tu copia con la versión más reciente
+- Comando: `git pull`
+
+**Status** 📊
+- Ver qué archivos has modificado, agregado o eliminado
+- Te dice el "estado" actual de tu proyecto
+- Comando: `git status`
+
+**Add** ➕
+- Preparar archivos para incluir en tu próximo commit
+- Como poner archivos en una "canasta" antes de guardarlos
+- Comando: `git add .` (todos los archivos) o `git add archivo.js`
+
+**Rama/Branch** 🌿
+- Una versión paralela del proyecto donde puedes trabajar sin afectar la principal
+- Como tener una copia de trabajo separada
+- Comandos: `git checkout -b nueva-rama`, `git checkout rama-existente`
+
+**Merge** 🤝
+- Combinar los cambios de una rama con otra
+- Unir tu trabajo con el trabajo principal
+- Se hace generalmente desde GitHub (Pull Request)
+
+### 🌐 Conceptos Web
+
+**Frontend** 🎨
+- La parte visual de la página web (lo que ves y con lo que interactúas)
+- HTML, CSS, JavaScript, React, etc.
+
+**Backend** ⚙️
+- La parte del servidor (bases de datos, lógica del negocio)
+- Node.js, Python, bases de datos, etc.
+
+**Localhost** 🏠
+- Tu computadora actuando como servidor web
+- `localhost:3000` = tu página corriendo en tu compu en el puerto 3000
+
+**Repositorio** 📚
+- El "contenedor" donde vive todo tu proyecto
+- Como una carpeta súper inteligente que recuerda todos los cambios
+
+**URL/Link** 🔗
+- La dirección web de tu proyecto
+- Ejemplo: `https://github.com/usuario/BisonCodersWeb`
+
+### 🔄 Flujo Típico de Trabajo
+
+1. **Clonar** el proyecto → Tenerlo en tu compu
+2. **Instalar** dependencias → Preparar herramientas
+3. **Ejecutar** → Ver la página funcionando
+4. **Modificar** archivos → Hacer cambios
+5. **Add** → Preparar cambios
+6. **Commit** → Guardar cambios con mensaje
+7. **Push** → Subir a GitHub
+8. **Repetir** pasos 4-7 según necesites
+
+### 💡 Analogías Útiles
+
+- **Git** = Sistema de "ctrl+z" súper avanzado para proyectos
+- **GitHub** = Google Drive pero para código
+- **Commit** = Punto de guardado en videojuegos
+- **Branch** = Dimension paralela de tu proyecto
+- **Merge** = Fusionar dimensiones paralelas
+- **Clone** = Fotocopiadora de proyectos completos
+- **npm** = App Store para herramientas de programación
 
 
