@@ -22,12 +22,6 @@ export default function Profile() {
     }
   }, [status, router]);
 
-  useEffect(() => {
-    if (session) {
-      fetchProfile();
-    }
-  }, [session]);
-
   const fetchProfile = async () => {
     try {
       const response = await fetch('/api/profile');
@@ -43,6 +37,12 @@ export default function Profile() {
       console.error('Error al cargar perfil:', error);
     }
   };
+
+  useEffect(() => {
+    if (session) {
+      fetchProfile();
+    }
+  }, [session]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

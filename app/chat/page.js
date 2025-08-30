@@ -45,11 +45,11 @@ export default function Chat() {
         body: JSON.stringify({ content: newMessage }),
       });
 
-             if (response.ok) {
-         const newMsg = await response.json();
-         // El mensaje se agregará automáticamente a través del SSE
-         setNewMessage('');
-       } else {
+      if (response.ok) {
+        const message = await response.json();
+        setMessages(prev => [...prev, message]);
+        setNewMessage('');
+      } else {
         const error = await response.json();
         setMessage(error.error || 'Error al enviar el mensaje');
       }
@@ -71,10 +71,10 @@ export default function Chat() {
         method: 'DELETE',
       });
 
-             if (response.ok) {
-         // El mensaje se eliminará automáticamente a través del SSE
-         setMessage('Mensaje eliminado exitosamente');
-       } else {
+      if (response.ok) {
+        setMessages(messages.filter(msg => msg._id !== messageId));
+        setMessage('Mensaje eliminado exitosamente');
+      } else {
         const error = await response.json();
         setMessage(error.error || 'Error al eliminar el mensaje');
       }

@@ -44,7 +44,7 @@ const ComoContribuir = () => {
                 </code>
               </div>
               <p className="text-blue-600 dark:text-blue-400 text-sm mt-2">
-                💡 Usa tu nombre real o username, sin espacios (ej: "juan-perez", "maria-garcia")
+                💡 Usa tu nombre real o username, sin espacios (ej: &quot;juan-perez&quot;, &quot;maria-garcia&quot;)
               </p>
             </div>
 
@@ -87,7 +87,7 @@ const ComoContribuir = () => {
               <div className="space-y-3 text-sm text-purple-600 dark:text-purple-400">
                 <div className="flex items-center">
                   <span className="mr-2">✏️</span>
-                  Cambia "Tu Nombre Aquí" por tu nombre real
+                  Cambia &quot;Tu Nombre Aquí&quot; por tu nombre real
                 </div>
                 <div className="flex items-center">
                   <span className="mr-2">💼</span>

@@ -12,14 +12,6 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/');
-    } else if (session) {
-      checkAdminAndFetchUsers();
-    }
-  }, [status, session, router]);
-
   const checkAdminAndFetchUsers = async () => {
     try {
       const response = await fetch('/api/admin/users');
@@ -34,6 +26,14 @@ export default function Admin() {
       router.push('/');
     }
   };
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/');
+    } else if (session) {
+      checkAdminAndFetchUsers();
+    }
+  }, [status, session, router]);
 
   const handleAction = async (userId, action, value) => {
     setLoading(true);
