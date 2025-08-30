@@ -1,17 +1,11 @@
 import Header from './components/Header';
-import Hero from './components/Hero';
-import About from './components/About';
-import Events from './components/Events';
-import Footer from './components/Footer';
+import ProjectsFeed from './components/ProjectsFeed';
 
 export default function Home() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <Header />
-      <Hero />
-      <About />
-      <Events />
-      <Footer />
+      <ProjectsFeed />
     </div>
   );
 }

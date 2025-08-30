@@ -20,7 +20,7 @@ const PresentacionPage = () => {
             Presentación no encontrada
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            La presentación "{nombre}" no existe o aún no ha sido creada.
+            La presentación &quot;{nombre}&quot; no existe o aún no ha sido creada.
           </p>
           <Link
             href="/intros"
