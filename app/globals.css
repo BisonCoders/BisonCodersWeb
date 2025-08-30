@@ -100,6 +100,34 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Forzar aplicación del modo oscuro */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+}
+
+/* Asegurar que todos los elementos hereden correctamente */
+html.dark * {
+  border-color: var(--border);
+}
+
+/* Forzar estilos en elementos específicos que pueden tener problemas */
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark button {
+  color: inherit;
+}
+
 /* Clases utilitarias globales */
 .bg-primary {
   background-color: var(--primary-500);
