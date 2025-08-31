@@ -8,7 +8,12 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const messagesEndRef = useRef(null);
+  const messagesStartRef = useRef(null);
   const channelRef = useRef(null);
 
   useEffect(() => {
