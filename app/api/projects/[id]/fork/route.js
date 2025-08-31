@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../auth/[...nextauth]/route';
-import { connectMongoDB } from '../../../../../lib/mongodb';
+import { connectDB } from '../../../../../lib/mongodb';
 import Project from '../../../../../models/Project';
 import User from '../../../../../models/User';
 import mongoose from 'mongoose';
@@ -27,7 +27,7 @@ export async function POST(request, { params }) {
       );
     }
 
-    await connectMongoDB();
+    await connectDB();
 
     const originalProject = await Project.findById(id);
     
