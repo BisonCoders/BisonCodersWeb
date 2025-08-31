@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import pusherClient from '@/lib/pusherClient';
 
@@ -26,11 +26,20 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
     // Escuchar nuevos mensajes
     channel.bind('new-message', (data) => {
       if (data.chatId === chat._id) {
-        const updatedChat = {
-          ...chat,
-          messages: [...chat.messages, data.message]
-        };
-        onChatUpdate(updatedChat);
+        // Verificar si ya tenemos este mensaje (para evitar duplicados con optimistic updates)
+        const messageExists = chat.messages.some(msg => 
+          msg._id === data.message._id || 
+          (msg.isOptimistic && msg.content === data.message.content && 
+           msg.sender._id === data.message.sender._id)
+        );
+        
+        if (!messageExists) {
+          const updatedChat = {
+            ...chat,
+            messages: [...chat.messages, data.message]
+          };
+          onChatUpdate(updatedChat);
+        }
       }
     });
 
@@ -58,16 +67,149 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
   }, [chat._id, currentUser.id]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [chat.messages]);
+    // Scroll automático inteligente
+    if (!loading) {
+      // Si es un mensaje nuevo (optimistic update), usar scroll inteligente
+      const hasNewMessage = chat.messages.some(msg => msg.isOptimistic);
+      if (hasNewMessage) {
+        scrollToBottomForNewMessage();
+      } else {
+        // Para carga inicial, ir al final
+        scrollToBottom();
+      }
+    }
+  }, [chat.messages, loading]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  // Inicializar paginación cuando cambia el chat
+  useEffect(() => {
+    if (chat?.pagination) {
+      setHasMore(chat.pagination.hasMore);
+      setPage(chat.pagination.page);
+    }
+  }, [chat?._id, chat?.pagination]);
+
+  const scrollToBottom = useCallback(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'end'
+      });
+    }
+  }, []);
+
+  // Scroll automático solo para mensajes nuevos (no para carga de mensajes antiguos)
+  const scrollToBottomForNewMessage = useCallback(() => {
+    if (messagesEndRef.current) {
+      const messagesContainer = messagesEndRef.current.parentElement;
+      const isAtBottom = messagesContainer.scrollTop + messagesContainer.clientHeight >= messagesContainer.scrollHeight - 100;
+      
+      // Solo hacer scroll si el usuario está cerca del final
+      if (isAtBottom) {
+        messagesEndRef.current.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'end'
+        });
+      }
+    }
+  }, []);
+
+  const loadMoreMessages = useCallback(async () => {
+    if (loading || !hasMore) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/chat/${chat._id}?page=${page + 1}&limit=30`);
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Agregar los mensajes antiguos al principio, limitando a 200 mensajes máximo
+        const allMessages = [...data.messages, ...chat.messages];
+        const limitedMessages = allMessages.slice(-200); // Mantener solo los últimos 200 mensajes
+        
+        const updatedChat = {
+          ...chat,
+          messages: limitedMessages
+        };
+        
+        onChatUpdate(updatedChat);
+        setPage(page + 1);
+        setHasMore(data.pagination.hasMore);
+      }
+    } catch (error) {
+      console.error('Error al cargar más mensajes:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, hasMore, chat, page, onChatUpdate]);
+
+  // Observador para detectar cuando el usuario llega al inicio
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          loadMoreMessages();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (messagesStartRef.current) {
+      observer.observe(messagesStartRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadMoreMessages]);
+
+  // Listener para el botón de scroll al final
+  useEffect(() => {
+    const messagesContainer = messagesStartRef.current?.parentElement;
+    if (!messagesContainer) return;
+
+    const handleScroll = () => {
+      const isAtBottom = messagesContainer.scrollTop + messagesContainer.clientHeight >= messagesContainer.scrollHeight - 100;
+      setShowScrollButton(!isAtBottom);
+    };
+
+    messagesContainer.addEventListener('scroll', handleScroll);
+    return () => messagesContainer.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
+
+    const messageContent = newMessage.trim();
+    setNewMessage('');
+    setIsTyping(false);
+
+    // Crear mensaje optimista
+    const optimisticMessage = {
+      _id: `temp-${Date.now()}`,
+      sender: {
+        _id: currentUser.id,
+        name: currentUser.name,
+        email: currentUser.email,
+        image: currentUser.image
+      },
+      content: messageContent,
+      timestamp: new Date().toISOString(),
+      isOptimistic: true
+    };
+
+    // Actualizar inmediatamente la UI
+    const updatedChat = {
+      ...chat,
+      messages: [...chat.messages, optimisticMessage]
+    };
+    onChatUpdate(updatedChat);
+
+    // Notificar que dejó de escribir
+    if (channelRef.current) {
+      channelRef.current.trigger('client-stop-typing', {
+        userId: currentUser.id,
+        userName: currentUser.name
+      });
+    }
 
     try {
       const response = await fetch(`/api/chat/${chat._id}`, {
@@ -75,25 +217,47 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ content: newMessage }),
+        body: JSON.stringify({ content: messageContent }),
       });
 
       if (response.ok) {
-        setNewMessage('');
-        setIsTyping(false);
-        // Notificar que dejó de escribir
-        if (channelRef.current) {
-          channelRef.current.trigger('client-stop-typing', {
-            userId: currentUser.id,
-            userName: currentUser.name
-          });
-        }
+        const realMessage = await response.json();
+        
+        // Reemplazar el mensaje optimista con el real
+        const finalChat = {
+          ...chat,
+          messages: chat.messages.map(msg => 
+            msg.isOptimistic ? realMessage : msg
+          )
+        };
+        onChatUpdate(finalChat);
       } else {
         const error = await response.json();
+        console.error('Error al enviar mensaje:', error);
+        
+        // Remover el mensaje optimista en caso de error
+        const errorChat = {
+          ...chat,
+          messages: chat.messages.filter(msg => !msg.isOptimistic)
+        };
+        onChatUpdate(errorChat);
+        
+        // Restaurar el mensaje en el input
+        setNewMessage(messageContent);
         alert(error.error || 'Error al enviar el mensaje');
       }
     } catch (error) {
       console.error('Error al enviar mensaje:', error);
+      
+      // Remover el mensaje optimista en caso de error
+      const errorChat = {
+        ...chat,
+        messages: chat.messages.filter(msg => !msg.isOptimistic)
+      };
+      onChatUpdate(errorChat);
+      
+      // Restaurar el mensaje en el input
+      setNewMessage(messageContent);
       alert('Error al enviar el mensaje');
     }
   };
@@ -174,9 +338,9 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-white dark:bg-gray-900">
-      {/* Chat Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+    <div className="flex-1 flex flex-col bg-white dark:bg-gray-900 h-full">
+      {/* Chat Header - Fijo */}
+      <div className="flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div className="flex items-center space-x-3">
           <div className="flex-shrink-0">
             {getChatAvatar()}
@@ -192,8 +356,26 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Messages - Solo esta área hace scroll */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 scroll-smooth">
+        {/* Indicador de carga para mensajes antiguos */}
+        {loading && (
+          <div className="flex justify-center py-4">
+            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
+
+        {/* Observador para cargar más mensajes */}
+        <div ref={messagesStartRef} className="h-1" />
+        
+        {/* Indicador de más mensajes disponibles */}
+        {hasMore && !loading && (
+          <div className="flex justify-center py-2">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              Desliza hacia arriba para cargar más mensajes
+            </span>
+          </div>
+        )}
         {chat.messages.map((message, index) => {
           const isOwnMessage = message.sender._id === currentUser.id;
           const showDate = index === 0 || 
@@ -214,11 +396,11 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
                 <div className={`max-w-md lg:max-w-lg relative group ${
                   isOwnMessage ? 'order-2' : 'order-1'
                 }`}>
-                  <div className={`rounded-lg px-4 py-3 shadow-sm border ${
-                    isOwnMessage 
-                      ? 'bg-blue-600 text-white border-blue-600' 
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600'
-                  }`}>
+                                     <div className={`rounded-lg px-4 py-3 shadow-sm border ${
+                     isOwnMessage 
+                       ? 'bg-blue-600 text-white border-blue-600' 
+                       : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border-gray-200 dark:border-gray-600'
+                   } ${message.isOptimistic ? 'opacity-70' : ''}`}>
                     {/* Message Header */}
                     <div className="flex items-center space-x-2 mb-2">
                       {!isOwnMessage && message.sender.image && (
@@ -242,15 +424,22 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
                       </span>
                     </div>
                     
-                    {/* Message Content */}
-                    <p className={`text-sm leading-relaxed ${
-                      isOwnMessage ? 'text-white' : 'text-gray-900 dark:text-white'
-                    }`}>
-                      {message.content}
-                    </p>
-                  </div>
-                </div>
-              </div>
+                                         {/* Message Content */}
+                     <div className="flex items-center justify-between">
+                       <p className={`text-sm leading-relaxed ${
+                         isOwnMessage ? 'text-white' : 'text-gray-900 dark:text-white'
+                       }`}>
+                         {message.content}
+                       </p>
+                       {message.isOptimistic && (
+                         <div className="ml-2">
+                           <div className="w-3 h-3 border-2 border-white/30 border-t-white/90 rounded-full animate-spin"></div>
+                         </div>
+                       )}
+                     </div>
+                   </div>
+                 </div>
+               </div>
             </div>
           );
         })}
@@ -267,10 +456,23 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
         )}
 
         <div ref={messagesEndRef} />
+
+        {/* Botón para ir al final */}
+        {showScrollButton && (
+          <button
+            onClick={scrollToBottom}
+            className="fixed bottom-20 right-6 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 z-10"
+            title="Ir al final"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </button>
+        )}
       </div>
 
-      {/* Message Input */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      {/* Message Input - Fijo en la parte inferior */}
+      <div className="flex-shrink-0 p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <form onSubmit={handleSubmit} className="flex space-x-3">
           <div className="flex-1 relative">
             <input
