@@ -1,114 +1,92 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import clientPromise from '../../../lib/mongodb';
-import { ObjectId } from 'mongodb';
+import { authOptions } from '@/lib/auth';
+import { connectDB } from '@/lib/mongodb';
+import Chat from '@/models/Chat';
+import User from '@/models/User';
 
 export async function GET() {
   try {
-    const client = await clientPromise;
-    const db = client.db();
-    
-    const messages = await db.collection('messages')
-      .find({})
-      .sort({ createdAt: -1 })
-      .limit(100)
-      .toArray();
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
 
-    return NextResponse.json(messages.reverse());
+    await connectDB();
+
+    // Obtener todos los chats donde el usuario es participante o es el chat general
+    const chats = await Chat.find({
+      $or: [
+        { type: 'general' },
+        { participants: session.user.id },
+        { createdBy: session.user.id }
+      ],
+      isActive: true
+    })
+    .populate('participants', 'name email image')
+    .populate('messages.sender', 'name email image')
+    .populate('createdBy', 'name email image')
+    .sort({ updatedAt: -1 });
+
+    return NextResponse.json(chats);
   } catch (error) {
-    console.error('Error al obtener mensajes:', error);
+    console.error('Error al obtener chats:', error);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }
 
 export async function POST(request) {
   try {
-    const session = await getServerSession();
-    
+    const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    const { content } = await request.json();
+    const { name, type, participants } = await request.json();
 
-    if (!content || content.trim() === '') {
-      return NextResponse.json({ error: 'El mensaje no puede estar vacío' }, { status: 400 });
+    await connectDB();
+
+    // Validar que el nombre no esté vacío
+    if (!name || name.trim() === '') {
+      return NextResponse.json({ error: 'El nombre del chat es requerido' }, { status: 400 });
     }
 
-    const client = await clientPromise;
-    const db = client.db();
-    
-    // Obtener información del usuario
-    const user = await db.collection('users').findOne({ email: session.user.email });
-    
-    // Verificar si el usuario está baneado o muteado
-    if (user?.banned) {
-      return NextResponse.json({ error: 'Tu cuenta ha sido baneada' }, { status: 403 });
+    // Para chats privados, validar que hay exactamente 2 participantes
+    if (type === 'private' && (!participants || participants.length !== 1)) {
+      return NextResponse.json({ error: 'Los chats privados deben tener exactamente 2 participantes' }, { status: 400 });
     }
-    
-    if (user?.muted && user.mutedUntil && new Date() < new Date(user.mutedUntil)) {
-      return NextResponse.json({ error: 'Estás muteado temporalmente' }, { status: 403 });
+
+    // Verificar si ya existe un chat privado entre estos usuarios
+    if (type === 'private') {
+      const existingChat = await Chat.findOne({
+        type: 'private',
+        participants: { $all: [session.user.id, participants[0]] },
+        isActive: true
+      });
+
+      if (existingChat) {
+        return NextResponse.json({ error: 'Ya existe un chat privado con este usuario' }, { status: 400 });
+      }
     }
-    
-    const message = {
-      content: content.trim(),
-      author: {
-        id: session.user.id,
-        name: session.user.name,
-        email: session.user.email,
-        image: session.user.image,
-        role: user?.role || 'user'
-      },
-      createdAt: new Date()
-    };
 
-    const result = await db.collection('messages').insertOne(message);
-    message._id = result.insertedId;
+    // Crear el nuevo chat
+    const newChat = new Chat({
+      name,
+      type,
+      participants: type === 'private' ? [session.user.id, ...participants] : participants || [],
+      createdBy: session.user.id
+    });
 
-    // Mensaje guardado exitosamente en DB
+    await newChat.save();
 
-    return NextResponse.json(message, { status: 201 });
+    // Poblar los datos del chat creado
+    const populatedChat = await Chat.findById(newChat._id)
+      .populate('participants', 'name email image')
+      .populate('createdBy', 'name email image');
+
+    return NextResponse.json(populatedChat, { status: 201 });
   } catch (error) {
-    console.error('Error al crear mensaje:', error);
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
-  }
-}
-
-export async function DELETE(request) {
-  try {
-    const session = await getServerSession();
-    
-    if (!session) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(request.url);
-    const messageId = searchParams.get('id');
-
-    if (!messageId) {
-      return NextResponse.json({ error: 'ID del mensaje requerido' }, { status: 400 });
-    }
-
-    const client = await clientPromise;
-    const db = client.db();
-    
-    // Verificar si el usuario es admin o el autor del mensaje
-    const user = await db.collection('users').findOne({ email: session.user.email });
-    const message = await db.collection('messages').findOne({ _id: new ObjectId(messageId) });
-
-    if (!message) {
-      return NextResponse.json({ error: 'Mensaje no encontrado' }, { status: 404 });
-    }
-
-    if (user?.role !== 'admin' && message.author.email !== session.user.email) {
-      return NextResponse.json({ error: 'No tienes permisos para eliminar este mensaje' }, { status: 403 });
-    }
-
-    await db.collection('messages').deleteOne({ _id: new ObjectId(messageId) });
-
-    return NextResponse.json({ message: 'Mensaje eliminado exitosamente' });
-  } catch (error) {
-    console.error('Error al eliminar mensaje:', error);
+    console.error('Error al crear chat:', error);
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
   }
 }

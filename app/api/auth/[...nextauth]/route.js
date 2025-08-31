@@ -1,7 +1,7 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import GithubProvider from 'next-auth/providers/github';
-import clientPromise, { connectMongoDB } from '../../../../lib/mongodb';
+import clientPromise, { connectDB } from '../../../../lib/mongodb';
 import { MongoDBAdapter } from '@next-auth/mongodb-adapter';
 import User from '../../../../models/User';
 
@@ -20,7 +20,7 @@ export const authOptions = {
   callbacks: {
     async signIn({ user, account, profile }) {
       try {
-        await connectMongoDB();
+        await connectDB();
         
         // Buscar o crear usuario en MongoDB con Mongoose
         let existingUser = await User.findOne({ email: user.email });
@@ -63,7 +63,7 @@ export const authOptions = {
     },
     async session({ session, user, token }) {
       try {
-        await connectMongoDB();
+        await connectDB();
         const userData = await User.findOne({ email: session.user.email });
         
         if (userData) {
