@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import CodeEditor from '../../../components/CodeEditor';
 import ProjectPreview from '../../../components/ProjectPreview';
+import FileUploader from '../../../components/FileUploader';
 
 export default function CreateProjectPage() {
   const router = useRouter();
@@ -409,6 +410,20 @@ Link del Proyecto: [https://github.com/tu-usuario/tu-proyecto](https://github.co
     }));
   };
 
+  const handleFilesUpload = (uploadedFiles) => {
+    // Combinar archivos subidos con los existentes
+    const existingPaths = project.files.map(f => f.path);
+    const newFiles = uploadedFiles.filter(f => !existingPaths.includes(f.path));
+    
+    const allFiles = [...project.files, ...newFiles];
+    
+    setProject(prev => ({
+      ...prev,
+      files: allFiles,
+      mainFile: prev.mainFile || allFiles[0]?.path || 'index.html',
+    }));
+  };
+
   const handleCreate = async (e) => {
     e.preventDefault();
     
@@ -609,16 +624,27 @@ Link del Proyecto: [https://github.com/tu-usuario/tu-proyecto](https://github.co
               </div>
             </div>
 
+            {/* File Upload Section */}
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
+                Subir Archivos
+              </h2>
+              <FileUploader 
+                onFilesUpload={handleFilesUpload}
+                className="mb-6"
+              />
+            </div>
+
             {/* Editor Section */}
             <div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
                 Código
               </h2>
-              <div className="border border-slate-200 dark:border-slate-600 rounded-lg overflow-hidden" style={{ height: '400px' }}>
+              <div className="border border-slate-200 dark:border-slate-600 rounded-lg overflow-hidden" style={{ height: '600px' }}>
                 <CodeEditor
                   files={project.files}
                   onFilesChange={(files) => setProject(prev => ({ ...prev, files }))}
-                  height="400px"
+                  height="600px"
                 />
               </div>
             </div>

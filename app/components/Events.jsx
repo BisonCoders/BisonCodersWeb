@@ -101,7 +101,7 @@ export default function Events() {
   };
 
   return (
-    <section id="events" className="py-20 bg-slate-900 relative overflow-hidden">
+    <section id="events" className="py-20 bg-slate-950 relative overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-10 left-10 font-mono text-sm text-emerald-400">

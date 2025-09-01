@@ -11,10 +11,10 @@ export default function Hero() {
       }}
     >
       {/* Overlay oscuro para mejorar legibilidad */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 via-slate-800/70 to-indigo-900/80"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80  "></div>
       
       {/* Patrón de código sutil */}
-      <div className="absolute inset-0 opacity-5">
+      <div className="absolute inset-0 opacity-[20%]">
         <div className="absolute top-20 left-20 font-mono text-sm text-green-400">
           {'{ "welcome": "BisonCoders" }'}
         </div>
