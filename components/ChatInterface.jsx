@@ -12,6 +12,7 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
   const [hasMore, setHasMore] = useState(false);
   const [page, setPage] = useState(1);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const messagesEndRef = useRef(null);
   const messagesStartRef = useRef(null);
   const channelRef = useRef(null);
@@ -26,29 +27,38 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
     // Escuchar nuevos mensajes
     channel.bind('new-message', (data) => {
       if (data.chatId === chat._id) {
-        // Verificar si ya tenemos este mensaje por ID o si es un mensaje optimista que estamos esperando
-        const messageExists = chat.messages.some(msg => 
-          msg._id === data.message._id ||
-          (msg.isOptimistic && msg.content === data.message.content && 
-           msg.sender._id === data.message.sender._id)
-        );
-        
-        if (!messageExists) {
-          // Si no existe, agregarlo al final
-          onChatUpdate(prevChat => ({
-            ...prevChat,
-            messages: [...prevChat.messages, data.message]
-          }));
-        } else if (messageExists) {
-          // Si existe un mensaje optimista, reemplazarlo con el real
-          onChatUpdate(prevChat => ({
-            ...prevChat,
-            messages: prevChat.messages.map(msg => 
-              msg.isOptimistic && msg.content === data.message.content && 
-              msg.sender._id === data.message.sender._id ? data.message : msg
-            )
-          }));
-        }
+        onChatUpdate(prevChat => {
+          // Verificar si ya tenemos este mensaje por ID
+          const messageExistsById = prevChat.messages.some(msg => msg._id === data.message._id);
+          
+          if (messageExistsById) {
+            // Si ya existe por ID, no hacer nada (evitar duplicados)
+            return prevChat;
+          }
+          
+          // Verificar si hay un mensaje optimista que coincida
+          const optimisticMessageIndex = prevChat.messages.findIndex(msg => 
+            msg.isOptimistic && 
+            msg.content === data.message.content && 
+            msg.sender._id === data.message.sender._id
+          );
+          
+          if (optimisticMessageIndex !== -1) {
+            // Reemplazar el mensaje optimista con el real
+            const newMessages = [...prevChat.messages];
+            newMessages[optimisticMessageIndex] = data.message;
+            return {
+              ...prevChat,
+              messages: newMessages
+            };
+          } else {
+            // Es un mensaje nuevo, agregarlo al final
+            return {
+              ...prevChat,
+              messages: [...prevChat.messages, data.message]
+            };
+          }
+        });
       }
     });
 
@@ -188,11 +198,21 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || isSubmitting) return;
 
     const messageContent = newMessage.trim();
     setNewMessage('');
     setIsTyping(false);
+    setIsSubmitting(true);
+
+    // Verificar si ya hay un mensaje optimista con el mismo contenido
+    const hasOptimisticMessage = chat.messages.some(msg => 
+      msg.isOptimistic && msg.content === messageContent && msg.sender._id === currentUser.id
+    );
+
+    if (hasOptimisticMessage) {
+      return; // Evitar envío duplicado
+    }
 
     // Crear mensaje optimista
     const optimisticMessage = {
@@ -209,11 +229,10 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
     };
 
     // Actualizar inmediatamente la UI
-    const updatedChat = {
-      ...chat,
-      messages: [...chat.messages, optimisticMessage]
-    };
-    onChatUpdate(updatedChat);
+    onChatUpdate(prevChat => ({
+      ...prevChat,
+      messages: [...prevChat.messages, optimisticMessage]
+    }));
 
     // Notificar que dejó de escribir
     if (channelRef.current) {
@@ -234,8 +253,25 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
 
       if (response.ok) {
         // El mensaje real se manejará a través del listener de Pusher
-        // No necesitamos hacer nada aquí porque Pusher enviará el mensaje
-        // y el listener lo manejará correctamente
+        // Configurar un timeout para limpiar mensajes optimistas no confirmados
+        setTimeout(() => {
+          onChatUpdate(prevChat => {
+            const hasOptimisticMessage = prevChat.messages.some(msg => 
+              msg.isOptimistic && msg.content === messageContent && msg.sender._id === currentUser.id
+            );
+            
+            if (hasOptimisticMessage) {
+              // Si después de 5 segundos aún hay un mensaje optimista, limpiarlo
+              return {
+                ...prevChat,
+                messages: prevChat.messages.filter(msg => 
+                  !(msg.isOptimistic && msg.content === messageContent && msg.sender._id === currentUser.id)
+                )
+              };
+            }
+            return prevChat;
+          });
+        }, 5000); // 5 segundos de timeout
       } else {
         const error = await response.json();
         console.error('Error al enviar mensaje:', error);
@@ -268,6 +304,8 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
       // Restaurar el mensaje en el input
       setNewMessage(messageContent);
       alert('Error al enviar el mensaje');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -494,10 +532,10 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
           </div>
           <button
             type="submit"
-            disabled={!newMessage.trim()}
+            disabled={!newMessage.trim() || isSubmitting}
             className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors font-medium disabled:cursor-not-allowed"
           >
-            Enviar
+            {isSubmitting ? 'Enviando...' : 'Enviar'}
           </button>
         </form>
       </div>
