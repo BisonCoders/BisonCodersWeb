@@ -26,19 +26,28 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
     // Escuchar nuevos mensajes
     channel.bind('new-message', (data) => {
       if (data.chatId === chat._id) {
-        // Verificar si ya tenemos este mensaje (para evitar duplicados con optimistic updates)
+        // Verificar si ya tenemos este mensaje por ID o si es un mensaje optimista que estamos esperando
         const messageExists = chat.messages.some(msg => 
-          msg._id === data.message._id || 
+          msg._id === data.message._id ||
           (msg.isOptimistic && msg.content === data.message.content && 
            msg.sender._id === data.message.sender._id)
         );
         
         if (!messageExists) {
-          const updatedChat = {
-            ...chat,
-            messages: [...chat.messages, data.message]
-          };
-          onChatUpdate(updatedChat);
+          // Si no existe, agregarlo al final
+          onChatUpdate(prevChat => ({
+            ...prevChat,
+            messages: [...prevChat.messages, data.message]
+          }));
+        } else if (messageExists) {
+          // Si existe un mensaje optimista, reemplazarlo con el real
+          onChatUpdate(prevChat => ({
+            ...prevChat,
+            messages: prevChat.messages.map(msg => 
+              msg.isOptimistic && msg.content === data.message.content && 
+              msg.sender._id === data.message.sender._id ? data.message : msg
+            )
+          }));
         }
       }
     });
@@ -71,14 +80,17 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
     if (!loading) {
       // Si es un mensaje nuevo (optimistic update), usar scroll inteligente
       const hasNewMessage = chat.messages.some(msg => msg.isOptimistic);
-      if (hasNewMessage) {
+      const isLastMessageFromCurrentUser = chat.messages.length > 0 && 
+        chat.messages[chat.messages.length - 1].sender._id === currentUser.id;
+      
+      if (hasNewMessage || isLastMessageFromCurrentUser) {
         scrollToBottomForNewMessage();
       } else {
         // Para carga inicial, ir al final
         scrollToBottom();
       }
     }
-  }, [chat.messages, loading]);
+  }, [chat.messages, loading, currentUser.id]);
 
   // Inicializar paginación cuando cambia el chat
   useEffect(() => {
@@ -221,26 +233,21 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
       });
 
       if (response.ok) {
-        const realMessage = await response.json();
-        
-        // Reemplazar el mensaje optimista con el real
-        const finalChat = {
-          ...chat,
-          messages: chat.messages.map(msg => 
-            msg.isOptimistic ? realMessage : msg
-          )
-        };
-        onChatUpdate(finalChat);
+        // El mensaje real se manejará a través del listener de Pusher
+        // No necesitamos hacer nada aquí porque Pusher enviará el mensaje
+        // y el listener lo manejará correctamente
       } else {
         const error = await response.json();
         console.error('Error al enviar mensaje:', error);
         
         // Remover el mensaje optimista en caso de error
-        const errorChat = {
-          ...chat,
-          messages: chat.messages.filter(msg => !msg.isOptimistic)
-        };
-        onChatUpdate(errorChat);
+        onChatUpdate(prevChat => {
+          const errorChat = {
+            ...prevChat,
+            messages: prevChat.messages.filter(msg => !msg.isOptimistic)
+          };
+          return errorChat;
+        });
         
         // Restaurar el mensaje en el input
         setNewMessage(messageContent);
@@ -250,11 +257,13 @@ export default function ChatInterface({ chat, currentUser, onChatUpdate }) {
       console.error('Error al enviar mensaje:', error);
       
       // Remover el mensaje optimista en caso de error
-      const errorChat = {
-        ...chat,
-        messages: chat.messages.filter(msg => !msg.isOptimistic)
-      };
-      onChatUpdate(errorChat);
+      onChatUpdate(prevChat => {
+        const errorChat = {
+          ...prevChat,
+          messages: prevChat.messages.filter(msg => !msg.isOptimistic)
+        };
+        return errorChat;
+      });
       
       // Restaurar el mensaje en el input
       setNewMessage(messageContent);

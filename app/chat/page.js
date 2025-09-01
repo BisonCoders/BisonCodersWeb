@@ -111,13 +111,25 @@ export default function ChatPage() {
     }
   };
 
-  const handleChatUpdate = (updatedChat) => {
-    setChats(prev => prev.map(chat => 
-      chat._id === updatedChat._id ? updatedChat : chat
-    ));
-    
-    if (selectedChat && selectedChat._id === updatedChat._id) {
-      setSelectedChat(updatedChat);
+  const handleChatUpdate = (updatedChatOrFunction) => {
+    // Si es una función, la ejecutamos con el estado actual
+    if (typeof updatedChatOrFunction === 'function') {
+      setChats(prev => prev.map(chat => 
+        chat._id === selectedChat._id ? updatedChatOrFunction(chat) : chat
+      ));
+      
+      if (selectedChat) {
+        setSelectedChat(prev => updatedChatOrFunction(prev));
+      }
+    } else {
+      // Si es un objeto, actualizamos directamente
+      setChats(prev => prev.map(chat => 
+        chat._id === updatedChatOrFunction._id ? updatedChatOrFunction : chat
+      ));
+      
+      if (selectedChat && selectedChat._id === updatedChatOrFunction._id) {
+        setSelectedChat(updatedChatOrFunction);
+      }
     }
   };
 
