@@ -9,6 +9,8 @@ export default function Header() {
   const { data: session, status } = useSession();
   const { isDark, toggleDarkMode } = useDarkMode();
   const [openProfile, setOpenProfile] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const profileRef = useRef(null);
 
   useEffect(() => {
@@ -20,6 +22,70 @@ export default function Header() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Manejar notificaciones
+  useEffect(() => {
+    if (!session) return;
+
+    // Importar dinámicamente pusherClient solo en el cliente
+    const initPusher = async () => {
+      const { default: pusherClient } = await import('@/lib/pusherClient');
+      
+      // Suscribirse a notificaciones de chat para el usuario actual
+      const channel = pusherClient.subscribe(`user-${session.user.id}`);
+
+      // Escuchar nuevas notificaciones
+      channel.bind('new-message', (data) => {
+        const newNotification = {
+          id: Date.now(),
+          type: 'chat',
+          message: `${data.senderName} te envió un mensaje`,
+          chatId: data.chatId,
+          chatName: data.chatName,
+          timestamp: new Date(),
+          read: false
+        };
+
+        setNotifications(prev => [newNotification, ...prev.slice(0, 9)]); // Mantener solo las últimas 10
+        setUnreadCount(prev => prev + 1);
+      });
+
+      return () => {
+        pusherClient.unsubscribe(`user-${session.user.id}`);
+      };
+    };
+
+    initPusher();
+  }, [session]);
+
+  const markAsRead = (notificationId) => {
+    setNotifications(prev => 
+      prev.map(notif => 
+        notif.id === notificationId ? { ...notif, read: true } : notif
+      )
+    );
+    setUnreadCount(prev => Math.max(0, prev - 1));
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(prev => 
+      prev.map(notif => ({ ...notif, read: true }))
+    );
+    setUnreadCount(0);
+  };
+
+  const formatTime = (timestamp) => {
+    const now = new Date();
+    const diff = now - new Date(timestamp);
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+    if (minutes < 1) return 'Ahora';
+    if (minutes < 60) return `${minutes}m`;
+    if (hours < 24) return `${hours}h`;
+    return `${days}d`;
+  };
 
   return (
     <header className="bg-slate-950/95 backdrop-blur-md border-b border-slate-800/50 sticky top-0 z-50 shadow-2xl">
@@ -60,22 +126,26 @@ export default function Header() {
                   <span className="relative z-10">Mi Perfil</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 to-cyan-500/0 group-hover:from-emerald-500/10 group-hover:to-cyan-500/10 rounded-lg transition-all duration-300"></div>
                 </Link>
+                <Link href="/chat" className="relative text-slate-300 hover:text-emerald-400 px-4 py-2 rounded-lg text-sm transition-all duration-300 hover:bg-slate-800/50 group">
+                  <span className="relative z-10">Chat</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 to-cyan-500/0 group-hover:from-emerald-500/10 group-hover:to-cyan-500/10 rounded-lg transition-all duration-300"></div>
+                </Link>
               </div>
             </div>
           )}
           
           <div className="flex items-center gap-4">
-            {/* Terminal Status Indicators */}
-            <div className="hidden lg:flex items-center space-x-4 text-xs font-mono">
-              <div className="flex items-center space-x-1 text-emerald-400">
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                <span>online</span>
-              </div>
-              <div className="flex items-center space-x-1 text-cyan-400">
-                <span>node: v20.11.0</span>
-              </div>
-            </div>
-            
+                         {/* Terminal Status Indicators */}
+             <div className="hidden lg:flex items-center space-x-4 text-xs font-mono">
+               <div className="flex items-center space-x-1 text-emerald-400">
+                 <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                 <span>online</span>
+               </div>
+               <div className="flex items-center space-x-1 text-cyan-400">
+                 <span>node: v20.11.0</span>
+               </div>
+             </div>
+
             {/* Toggle Dark Mode */}
             <button
               onClick={toggleDarkMode}
@@ -111,61 +181,151 @@ export default function Header() {
                 
                 {/* User Menu */}
                 <div className="relative" ref={profileRef}>
-                  <button 
-                    onClick={() => setOpenProfile(!openProfile)}
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-800/50 transition-all duration-300 border border-slate-700/30 hover:border-emerald-500/30"
-                  >
-                    <img
-                      src={session.user.image || '/default-avatar.svg'}
-                      alt={session.user.name}
-                      className="w-8 h-8 rounded-full"
-                    />
-                    <span className="hidden sm:inline text-sm text-slate-300">
-                      {session.user.name?.split(' ')[0]}
-                    </span>
-                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
+                                     <button 
+                     onClick={() => setOpenProfile(!openProfile)}
+                     className="relative flex items-center gap-2 p-2 rounded-lg hover:bg-slate-800/50 transition-all duration-300 border border-slate-700/30 hover:border-emerald-500/30"
+                   >
+                     <img
+                       src={session.user.image || '/default-avatar.svg'}
+                       alt={session.user.name}
+                       className="w-8 h-8 rounded-full"
+                     />
+                     <span className="hidden sm:inline text-sm text-slate-300">
+                       {session.user.name?.split(' ')[0]}
+                     </span>
+                     <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                     </svg>
+                     
+                     {/* Badge de notificaciones no leídas */}
+                     {unreadCount > 0 && (
+                       <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                         {unreadCount > 9 ? '9+' : unreadCount}
+                       </span>
+                     )}
+                   </button>
                   
-                  {/* Dropdown Menu */}
-                  {openProfile && (
-                    <div className="absolute right-0 mt-2 w-52 bg-slate-900/95 backdrop-blur-md rounded-lg shadow-2xl border border-slate-700/50 z-50">
-                      <div className="py-1">
-                        <Link
-                          href={`/profile/${session.user.id}`}
-                          className="flex items-center px-4 py-3 text-sm text-slate-300 hover:text-emerald-400 hover:bg-slate-800/50 transition-all duration-200"
-                          onClick={() => setOpenProfile(false)}
-                        >
-                          Mi Perfil
-                        </Link>
-                        <Link
-                          href="/projects/create"
-                          className="flex items-center px-4 py-3 text-sm text-slate-300 hover:text-emerald-400 hover:bg-slate-800/50 transition-all duration-200"
-                          onClick={() => setOpenProfile(false)}
-                        >
-                          Crear Proyecto
-                        </Link>
-                        <Link
-                          href="/settings"
-                          className="flex items-center px-4 py-3 text-sm text-slate-300 hover:text-emerald-400 hover:bg-slate-800/50 transition-all duration-200"
-                          onClick={() => setOpenProfile(false)}
-                        >
-                          Configuración
-                        </Link>
-                        <hr className="my-1 border-slate-700/50" />
-                        <button
-                          onClick={() => {
-                            setOpenProfile(false);
-                            signOut();
-                          }}
-                          className="flex items-center w-full px-4 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-slate-800/50 transition-all duration-200"
-                        >
-                          Cerrar Sesión
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                                     {/* Dropdown Menu */}
+                   {openProfile && (
+                     <div className="absolute right-0 mt-2 w-80 bg-slate-900/95 backdrop-blur-md rounded-lg shadow-2xl border border-slate-700/50 z-50">
+                       <div className="py-1">
+                         {/* Sección de Notificaciones */}
+                         <div className="px-4 py-3 border-b border-slate-700/50">
+                           <div className="flex items-center justify-between mb-2">
+                             <h3 className="text-sm font-semibold text-slate-200">
+                               Notificaciones
+                             </h3>
+                             {unreadCount > 0 && (
+                               <button
+                                 onClick={markAllAsRead}
+                                 className="text-xs text-emerald-400 hover:text-emerald-300 hover:underline"
+                               >
+                                 Marcar como leídas
+                               </button>
+                             )}
+                           </div>
+                           
+                           <div className="max-h-48 overflow-y-auto">
+                             {notifications.length === 0 ? (
+                               <div className="text-center py-4">
+                                 <svg className="w-8 h-8 mx-auto mb-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM10.5 3.75a6 6 0 0 1 6 6v4.5l2.25 2.25a1.5 1.5 0 0 1-1.5 2.25h-13.5a1.5 1.5 0 0 1-1.5-2.25L6 14.25V9.75a6 6 0 0 1 6-6z" />
+                                 </svg>
+                                 <p className="text-xs text-slate-500">No hay notificaciones</p>
+                               </div>
+                             ) : (
+                               <div className="space-y-1">
+                                 {notifications.slice(0, 3).map((notification) => (
+                                   <div
+                                     key={notification.id}
+                                     className={`p-2 rounded cursor-pointer transition-colors ${
+                                       !notification.read ? 'bg-slate-800/50' : 'hover:bg-slate-800/30'
+                                     }`}
+                                     onClick={() => {
+                                       markAsRead(notification.id);
+                                       if (notification.chatId) {
+                                         window.location.href = `/chat?chatId=${notification.chatId}`;
+                                       }
+                                       setOpenProfile(false);
+                                     }}
+                                   >
+                                     <div className="flex items-start space-x-2">
+                                       <div className="w-2 h-2 bg-emerald-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                                       <div className="flex-1 min-w-0">
+                                         <p className="text-xs text-slate-300 truncate">
+                                           {notification.message}
+                                         </p>
+                                         {notification.chatName && (
+                                           <p className="text-xs text-slate-500">
+                                             En: {notification.chatName}
+                                           </p>
+                                         )}
+                                         <p className="text-xs text-slate-600">
+                                           {formatTime(notification.timestamp)}
+                                         </p>
+                                       </div>
+                                       {!notification.read && (
+                                         <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 mt-1.5"></div>
+                                       )}
+                                     </div>
+                                   </div>
+                                 ))}
+                                 {notifications.length > 3 && (
+                                   <Link
+                                     href="/chat"
+                                     className="block text-center text-xs text-emerald-400 hover:text-emerald-300 py-2 hover:bg-slate-800/30 rounded transition-colors"
+                                     onClick={() => setOpenProfile(false)}
+                                   >
+                                     Ver todas las notificaciones ({notifications.length})
+                                   </Link>
+                                 )}
+                               </div>
+                             )}
+                           </div>
+                         </div>
+
+                         {/* Enlaces de navegación */}
+                         <Link
+                           href={`/profile/${session.user.id}`}
+                           className="flex items-center px-4 py-3 text-sm text-slate-300 hover:text-emerald-400 hover:bg-slate-800/50 transition-all duration-200"
+                           onClick={() => setOpenProfile(false)}
+                         >
+                           Mi Perfil
+                         </Link>
+                         <Link
+                           href="/projects/create"
+                           className="flex items-center px-4 py-3 text-sm text-slate-300 hover:text-emerald-400 hover:bg-slate-800/50 transition-all duration-200"
+                           onClick={() => setOpenProfile(false)}
+                         >
+                           Crear Proyecto
+                         </Link>
+                         <Link
+                           href="/chat"
+                           className="flex items-center px-4 py-3 text-sm text-slate-300 hover:text-emerald-400 hover:bg-slate-800/50 transition-all duration-200"
+                           onClick={() => setOpenProfile(false)}
+                         >
+                           Chat
+                         </Link>
+                         <Link
+                           href="/settings"
+                           className="flex items-center px-4 py-3 text-sm text-slate-300 hover:text-emerald-400 hover:bg-slate-800/50 transition-all duration-200"
+                           onClick={() => setOpenProfile(false)}
+                         >
+                           Configuración
+                         </Link>
+                         <hr className="my-1 border-slate-700/50" />
+                         <button
+                           onClick={() => {
+                             setOpenProfile(false);
+                             signOut();
+                           }}
+                           className="flex items-center w-full px-4 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-slate-800/50 transition-all duration-200"
+                         >
+                           Cerrar Sesión
+                         </button>
+                       </div>
+                     </div>
+                   )}
                 </div>
               </div>
             ) : (
