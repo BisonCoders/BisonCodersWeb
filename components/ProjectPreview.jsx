@@ -59,14 +59,36 @@ const ProjectPreview = ({ files = [], mainFile = 'index.html', projectType = 'ht
     const cssFiles = files.filter(f => f.language === 'css' || f.path.endsWith('.css'));
     if (cssFiles.length > 0) {
       const cssContent = cssFiles.map(f => f.content).join('\n');
-      html = html.replace('</head>', `<style>${cssContent}</style></head>`);
+      const styleTag = `<style>${cssContent}</style>`;
+      
+      // Intentar múltiples formas de inyectar CSS
+      if (html.includes('</head>')) {
+        html = html.replace('</head>', `${styleTag}</head>`);
+      } else if (html.includes('<head>')) {
+        html = html.replace('<head>', `<head>${styleTag}`);
+      } else if (html.includes('<html>')) {
+        html = html.replace('<html>', `<html><head>${styleTag}</head>`);
+      } else {
+        // Si no hay estructura HTML, añadir estructura completa
+        html = `<!DOCTYPE html><html><head>${styleTag}</head><body>${html}</body></html>`;
+      }
     }
     
     // Inyectar JavaScript inline
     const jsFiles = files.filter(f => f.language === 'javascript' || f.path.endsWith('.js'));
     if (jsFiles.length > 0) {
       const jsContent = jsFiles.map(f => f.content).join('\n');
-      html = html.replace('</body>', `<script>${jsContent}</script></body>`);
+      const scriptTag = `<script>${jsContent}</script>`;
+      
+      // Intentar múltiples formas de inyectar JS
+      if (html.includes('</body>')) {
+        html = html.replace('</body>', `${scriptTag}</body>`);
+      } else if (html.includes('<body>')) {
+        html = html.replace('</html>', `${scriptTag}</html>`);
+      } else {
+        // Si no hay estructura, añadir al final
+        html += scriptTag;
+      }
     }
 
     setPreviewContent(html);
