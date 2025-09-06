@@ -15,7 +15,7 @@ export default function Events() {
     },
     {
       title: "Escuelita Maker Batch 4 Luminar",
-      date: "September 9, 2025",
+      date: "September 23, 2025",
       time: "3 Meses Intensivos",
       description: "Batch 4 Luminar - Transform your idea into reality",
       link: "https://escuelitamaker.com/",
