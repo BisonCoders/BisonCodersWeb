@@ -117,14 +117,14 @@ export default function Footer() {
                 <div className="flex items-start">
                   <span className="text-blue-400 mr-2 mt-1">🏛️</span>
                   <div>
-                    <span className="text-slate-300">Universidad Tecnológico</span>
+                    <span className="text-slate-300">Instituto Tecnológico</span>
                     <br />
                     <span className="text-slate-400">de Chihuahua II</span>
                   </div>
                 </div>
                 <div className="flex items-center">
                   <span className="text-emerald-400 mr-2">📧</span>
-                  <span className="text-slate-400">bisoncoders@utch.edu.mx</span>
+                  <span className="text-slate-400">bisoncoders@chihuhaua2.tecnm.mx</span>
                 </div>
                 <div className="flex items-center">
                   <span className="text-cyan-400 mr-2">🌐</span>
